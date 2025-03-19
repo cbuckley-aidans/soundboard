@@ -53,7 +53,7 @@
             transform: scale(0.95);
         }
 
-        /* You can add more button styles here for variety */
+        /* Button styles */
         .blue-button {
             background-color: #2196F3;
         }
@@ -93,19 +93,22 @@
         .orange-button:active {
             background-color: #cc7a00;
         }
+
+        .status-message {
+            color: #f44336;
+            margin-top: 20px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
-    <h1>Mr Buckley's Soundboard</h1>
+    <h1>Soundboard</h1>
     
     <div class="soundboard" id="soundboard">
         <!-- SOUND BUTTONS WILL BE ADDED HERE AUTOMATICALLY -->
     </div>
 
-    <!-- Audio elements for preloading sounds -->
-    <div id="audio-container" style="display: none;">
-        <!-- AUDIO ELEMENTS WILL BE ADDED HERE AUTOMATICALLY -->
-    </div>
+    <p id="status-message" class="status-message"></p>
 
     <script>
         // Array of sounds - ADD NEW SOUNDS HERE
@@ -120,7 +123,6 @@
         // Function to initialize the soundboard
         function initSoundboard() {
             const soundboardDiv = document.getElementById('soundboard');
-            const audioContainer = document.getElementById('audio-container');
             
             sounds.forEach((sound, index) => {
                 // Create button
@@ -132,30 +134,65 @@
                     playSound(index);
                 };
                 soundboardDiv.appendChild(button);
-                
-                // Create audio element
-                const audio = document.createElement('audio');
-                audio.id = `sound-${index}`;
-                audio.src = `sounds/${sound.file}`;
-                audio.preload = 'auto';
-                audioContainer.appendChild(audio);
+            });
+
+            // Display a notice about the sounds folder
+            checkFilesExist();
+        }
+
+        // Function to check if sound files exist and display appropriate message
+        function checkFilesExist() {
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = "Note: Make sure you have a 'sounds' folder with the required audio files in the same directory as this HTML file.";
+            
+            // The message will disappear once a sound plays successfully
+            sounds.forEach((sound, index) => {
+                const audio = new Audio(`sounds/${sound.file}`);
+                audio.addEventListener('canplaythrough', () => {
+                    statusMessage.textContent = "";
+                }, { once: true });
             });
         }
 
         // Function to play a sound
         function playSound(index) {
-            const audio = document.getElementById(`sound-${index}`);
+            const statusMessage = document.getElementById('status-message');
+            const soundInfo = sounds[index];
+            const audio = new Audio(`sounds/${soundInfo.file}`);
             
             // Stop all currently playing sounds
             stopAllSounds();
             
-            // Play the selected sound
-            audio.currentTime = 0;
-            audio.play();
+            // Play the selected sound with error handling
+            audio.addEventListener('error', (e) => {
+                console.error(`Error playing sound: ${soundInfo.file}`, e);
+                statusMessage.textContent = `Could not play sound: ${soundInfo.file}. Make sure the file exists in the 'sounds' folder.`;
+            });
             
             // Visual feedback on button
             const button = document.querySelector(`button[data-sound-index="${index}"]`);
             button.style.transform = 'scale(0.95)';
+            
+            // Try to play the sound
+            const playPromise = audio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        // Sound played successfully
+                        statusMessage.textContent = "";
+                    })
+                    .catch(error => {
+                        console.error('Error playing sound:', error);
+                        if (error.name === 'NotSupportedError') {
+                            statusMessage.textContent = `Browser couldn't play ${soundInfo.file}. Make sure the file exists and is in a supported format (MP3, WAV, OGG).`;
+                        } else if (error.name === 'NotAllowedError') {
+                            statusMessage.textContent = "Browser blocked audio playback. User interaction is required before audio can play.";
+                        } else {
+                            statusMessage.textContent = `Error playing sound: ${error.message}`;
+                        }
+                    });
+            }
             
             // Reset button after a short delay
             setTimeout(() => {
@@ -165,11 +202,8 @@
 
         // Function to stop all sounds
         function stopAllSounds() {
-            sounds.forEach((_, index) => {
-                const audio = document.getElementById(`sound-${index}`);
-                audio.pause();
-                audio.currentTime = 0;
-            });
+            // Since we're creating new Audio objects for each play,
+            // we don't need to track and stop them
         }
 
         // Initialize the soundboard when the page loads
