@@ -53,6 +53,12 @@
             transform: scale(0.95);
         }
 
+        .sound-button.disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Button styles */
         .blue-button {
             background-color: #2196F3;
@@ -62,6 +68,9 @@
         }
         .blue-button:active {
             background-color: #0a69b7;
+        }
+        .blue-button.disabled {
+            background-color: #666;
         }
 
         .red-button {
@@ -73,6 +82,9 @@
         .red-button:active {
             background-color: #b71c1c;
         }
+        .red-button.disabled {
+            background-color: #666;
+        }
 
         .purple-button {
             background-color: #9c27b0;
@@ -82,6 +94,9 @@
         }
         .purple-button:active {
             background-color: #6a1b9a;
+        }
+        .purple-button.disabled {
+            background-color: #666;
         }
 
         .orange-button {
@@ -93,6 +108,9 @@
         .orange-button:active {
             background-color: #cc7a00;
         }
+        .orange-button.disabled {
+            background-color: #666;
+        }
 
         .teal-button {
             background-color: #009688;
@@ -102,6 +120,9 @@
         }
         .teal-button:active {
             background-color: #00695c;
+        }
+        .teal-button.disabled {
+            background-color: #666;
         }
         
         .pink-button {
@@ -113,16 +134,73 @@
         .pink-button:active {
             background-color: #ad1457;
         }
+        .pink-button.disabled {
+            background-color: #666;
+        }
 
         .status-message {
             color: #f44336;
             margin-top: 20px;
             font-style: italic;
         }
+
+        .token-section {
+            margin: 20px auto;
+            max-width: 400px;
+            background-color: #333;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .token-display {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .token-input {
+            padding: 8px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .token-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .infinite-mode {
+            color: gold;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
     </style>
 </head>
 <body>
     <h1>Soundboard</h1>
+    
+    <div class="token-section">
+        <div class="token-display">
+            <span id="token-count">You have 0 tokens</span>
+            <span id="infinite-indicator" class="infinite-mode" style="display: none;">⚡ INFINITE MODE ⚡</span>
+        </div>
+        <input type="text" id="token-input" class="token-input" placeholder="Enter secret code">
+        <button id="token-submit" class="token-button">Get Tokens</button>
+    </div>
     
     <div class="soundboard" id="soundboard">
         <!-- SOUND BUTTONS WILL BE ADDED HERE AUTOMATICALLY -->
@@ -131,6 +209,10 @@
     <p id="status-message" class="status-message"></p>
 
     <script>
+        // Token system
+        let tokens = 0;
+        let infiniteMode = false;
+
         // Array of sounds - ADD NEW SOUNDS HERE
         // Format: {name: "BUTTON TEXT", file: "filename.mp3", style: "optional-css-class"}
         const sounds = [
@@ -150,8 +232,6 @@
             {name: "ARE YOU LISTENING", file: "LISTENING.mp3", style: "red-button"},
             {name: "CRAZY TALK", file: "CRAZY TALK.mp3", style: "pink-button"},
             {name: "VILLAGER", file: "VILLAGER.mp3", style: "teal-button"},
-
-
         ];
 
         // Function to get base URL
@@ -167,17 +247,110 @@
                 // Create button
                 const button = document.createElement('button');
                 button.textContent = sound.name;
-                button.className = `sound-button ${sound.style}`;
+                button.className = `sound-button ${sound.style} disabled`;
                 button.setAttribute('data-sound-index', index);
                 button.onclick = function() {
-                    playSound(index);
+                    if (hasTokens()) {
+                        playSound(index);
+                    } else {
+                        showStatusMessage("You need tokens to play sounds!");
+                    }
                 };
                 soundboardDiv.appendChild(button);
             });
+
+            // Set up token submission
+            document.getElementById('token-submit').addEventListener('click', submitSecretCode);
+            document.getElementById('token-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitSecretCode();
+                }
+            });
+
+            // Initialize token display
+            updateTokenDisplay();
+            updateButtonStates();
+        }
+
+        // Function to update token display
+        function updateTokenDisplay() {
+            const tokenCountElement = document.getElementById('token-count');
+            const infiniteIndicator = document.getElementById('infinite-indicator');
+            
+            if (infiniteMode) {
+                tokenCountElement.textContent = "Unlimited tokens";
+                infiniteIndicator.style.display = 'inline';
+            } else {
+                tokenCountElement.textContent = `You have ${tokens} token${tokens !== 1 ? 's' : ''}`;
+                infiniteIndicator.style.display = 'none';
+            }
+        }
+
+        // Function to update button states based on token availability
+        function updateButtonStates() {
+            const buttons = document.querySelectorAll('.sound-button');
+            
+            buttons.forEach(button => {
+                if (infiniteMode || tokens > 0) {
+                    button.classList.remove('disabled');
+                } else {
+                    button.classList.add('disabled');
+                }
+            });
+        }
+
+        // Function to check if user has tokens
+        function hasTokens() {
+            return infiniteMode || tokens > 0;
+        }
+
+        // Function to submit secret code
+        function submitSecretCode() {
+            const codeInput = document.getElementById('token-input');
+            const code = codeInput.value.trim().toLowerCase();
+            const statusMessage = document.getElementById('status-message');
+            
+            if (code === "banana") {
+                tokens += 1;
+                statusMessage.textContent = "Success! You received 1 token.";
+                statusMessage.style.color = "#4CAF50";
+            } else if (code === "buckley") {
+                infiniteMode = true;
+                statusMessage.textContent = "🎉 DEBUG MODE ACTIVATED! Infinite tokens granted.";
+                statusMessage.style.color = "gold";
+            } else {
+                statusMessage.textContent = "Invalid code. Try again.";
+                statusMessage.style.color = "#f44336";
+            }
+            
+            // Clear input
+            codeInput.value = "";
+            
+            // Update display
+            updateTokenDisplay();
+            updateButtonStates();
+            
+            // Clear status message after a delay
+            setTimeout(() => {
+                statusMessage.textContent = "";
+            }, 3000);
         }
 
         // Function to play a sound
         function playSound(index) {
+            // Check for tokens first
+            if (!hasTokens()) {
+                showStatusMessage("You need tokens to play sounds!");
+                return;
+            }
+            
+            // If not in infinite mode, decrease token count
+            if (!infiniteMode) {
+                tokens -= 1;
+                updateTokenDisplay();
+                updateButtonStates();
+            }
+            
             const statusMessage = document.getElementById('status-message');
             const soundInfo = sounds[index];
             const baseUrl = getBaseUrl();
@@ -193,6 +366,14 @@
             // Play the selected sound with error handling
             audio.addEventListener('error', (e) => {
                 statusMessage.textContent = `Could not play sound: ${soundInfo.file}`;
+                statusMessage.style.color = "#f44336";
+                
+                // Refund the token if sound fails to play
+                if (!infiniteMode) {
+                    tokens += 1;
+                    updateTokenDisplay();
+                    updateButtonStates();
+                }
             });
             
             audio.addEventListener('playing', () => {
@@ -220,6 +401,14 @@
                         } else {
                             statusMessage.textContent = `Error playing sound: ${error.message}`;
                         }
+                        statusMessage.style.color = "#f44336";
+                        
+                        // Refund the token if sound fails to play
+                        if (!infiniteMode) {
+                            tokens += 1;
+                            updateTokenDisplay();
+                            updateButtonStates();
+                        }
                     });
             }
             
@@ -235,6 +424,18 @@
                 window.currentAudio.pause();
                 window.currentAudio.currentTime = 0;
             }
+        }
+
+        // Function to show status message
+        function showStatusMessage(message, isError = true) {
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = message;
+            statusMessage.style.color = isError ? "#f44336" : "#4CAF50";
+            
+            // Clear status message after a delay
+            setTimeout(() => {
+                statusMessage.textContent = "";
+            }, 3000);
         }
 
         // Initialize the soundboard when the page loads
