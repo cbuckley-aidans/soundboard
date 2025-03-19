@@ -207,7 +207,8 @@
             const baseUrl = getBaseUrl();
             
             sounds.forEach((sound, index) => {
-                const audioUrl = `${baseUrl}/sounds/${sound.file}`;
+                // Look for audio files in the same directory as index.html
+                const audioUrl = `${baseUrl}/${sound.file}`;
                 logDebug(`Checking file: ${audioUrl}`);
                 
                 // Use fetch to check if files exist
@@ -231,13 +232,15 @@
             const statusMessage = document.getElementById('status-message');
             const soundInfo = sounds[index];
             const baseUrl = getBaseUrl();
-            const audioUrl = `${baseUrl}/sounds/${soundInfo.file}`;
+            
+            // Look for audio files in the same directory as index.html
+            const audioUrl = `${baseUrl}/${soundInfo.file}`;
             
             logDebug(`Attempting to play: ${audioUrl}`);
             
             const audio = new Audio(audioUrl);
             
-            // Stop all currently playing sounds - implemented through global audio element tracking
+            // Stop all currently playing sounds
             stopAllSounds();
             
             // Play the selected sound with error handling
