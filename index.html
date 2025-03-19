@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soundboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        .soundboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 0 auto;
+            max-width: 800px;
+        }
+
+        .sound-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            min-width: 200px;
+        }
+
+        .sound-button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .sound-button:active {
+            background-color: #3e8e41;
+            transform: scale(0.95);
+        }
+
+        /* You can add more button styles here for variety */
+        .blue-button {
+            background-color: #2196F3;
+        }
+        .blue-button:hover {
+            background-color: #0b7dda;
+        }
+        .blue-button:active {
+            background-color: #0a69b7;
+        }
+
+        .red-button {
+            background-color: #f44336;
+        }
+        .red-button:hover {
+            background-color: #da190b;
+        }
+        .red-button:active {
+            background-color: #b71c1c;
+        }
+
+        .purple-button {
+            background-color: #9c27b0;
+        }
+        .purple-button:hover {
+            background-color: #7b1fa2;
+        }
+        .purple-button:active {
+            background-color: #6a1b9a;
+        }
+
+        .orange-button {
+            background-color: #ff9800;
+        }
+        .orange-button:hover {
+            background-color: #e68a00;
+        }
+        .orange-button:active {
+            background-color: #cc7a00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mr Buckley's Soundboard</h1>
+    
+    <div class="soundboard" id="soundboard">
+        <!-- SOUND BUTTONS WILL BE ADDED HERE AUTOMATICALLY -->
+    </div>
+
+    <!-- Audio elements for preloading sounds -->
+    <div id="audio-container" style="display: none;">
+        <!-- AUDIO ELEMENTS WILL BE ADDED HERE AUTOMATICALLY -->
+    </div>
+
+    <script>
+        // Array of sounds - ADD NEW SOUNDS HERE
+        // Format: {name: "BUTTON TEXT", file: "filename.mp3", style: "optional-css-class"}
+        const sounds = [
+            {name: "ALWAYS WATCHING", file: "watching.mp3", style: ""},
+            {name: "REVERSE PSYCHOLOGY", file: "psychology.mp3", style: "blue-button"},
+            // ADD MORE SOUNDS HERE FOLLOWING THE SAME FORMAT
+            // Example: {name: "BUTTON NAME", file: "soundfile.mp3", style: "red-button"}
+        ];
+
+        // Function to initialize the soundboard
+        function initSoundboard() {
+            const soundboardDiv = document.getElementById('soundboard');
+            const audioContainer = document.getElementById('audio-container');
+            
+            sounds.forEach((sound, index) => {
+                // Create button
+                const button = document.createElement('button');
+                button.textContent = sound.name;
+                button.className = `sound-button ${sound.style}`;
+                button.setAttribute('data-sound-index', index);
+                button.onclick = function() {
+                    playSound(index);
+                };
+                soundboardDiv.appendChild(button);
+                
+                // Create audio element
+                const audio = document.createElement('audio');
+                audio.id = `sound-${index}`;
+                audio.src = `sounds/${sound.file}`;
+                audio.preload = 'auto';
+                audioContainer.appendChild(audio);
+            });
+        }
+
+        // Function to play a sound
+        function playSound(index) {
+            const audio = document.getElementById(`sound-${index}`);
+            
+            // Stop all currently playing sounds
+            stopAllSounds();
+            
+            // Play the selected sound
+            audio.currentTime = 0;
+            audio.play();
+            
+            // Visual feedback on button
+            const button = document.querySelector(`button[data-sound-index="${index}"]`);
+            button.style.transform = 'scale(0.95)';
+            
+            // Reset button after a short delay
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 200);
+        }
+
+        // Function to stop all sounds
+        function stopAllSounds() {
+            sounds.forEach((_, index) => {
+                const audio = document.getElementById(`sound-${index}`);
+                audio.pause();
+                audio.currentTime = 0;
+            });
+        }
+
+        // Initialize the soundboard when the page loads
+        window.onload = initSoundboard;
+    </script>
+</body>
+</html>
