@@ -94,35 +94,30 @@
             background-color: #cc7a00;
         }
 
-        .debug-panel {
-            margin-top: 20px;
-            background-color: #333;
-            padding: 10px;
-            border-radius: 5px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            text-align: left;
+        .teal-button {
+            background-color: #009688;
+        }
+        .teal-button:hover {
+            background-color: #00796b;
+        }
+        .teal-button:active {
+            background-color: #00695c;
+        }
+        
+        .pink-button {
+            background-color: #e91e63;
+        }
+        .pink-button:hover {
+            background-color: #c2185b;
+        }
+        .pink-button:active {
+            background-color: #ad1457;
         }
 
         .status-message {
             color: #f44336;
             margin-top: 20px;
             font-style: italic;
-        }
-
-        .debug-toggle {
-            background-color: #555;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .hidden {
-            display: none;
         }
     </style>
 </head>
@@ -134,12 +129,6 @@
     </div>
 
     <p id="status-message" class="status-message"></p>
-    
-    <button id="debug-toggle" class="debug-toggle">Show Debug Info</button>
-    <div id="debug-panel" class="debug-panel hidden">
-        <p>Debug Information:</p>
-        <div id="debug-info"></div>
-    </div>
 
     <script>
         // Array of sounds - ADD NEW SOUNDS HERE
@@ -147,31 +136,25 @@
         const sounds = [
             {name: "ALWAYS WATCHING", file: "watching.mp3", style: ""},
             {name: "REVERSE PSYCHOLOGY", file: "psychology.mp3", style: "blue-button"},
-            // ADD MORE SOUNDS HERE FOLLOWING THE SAME FORMAT
-            // Example: {name: "BUTTON NAME", file: "soundfile.mp3", style: "red-button"}
+            {name: "BURGLE TURTS", file: "BURGLE TURTS.mp3", style: "purple-button"},
+            {name: "CHAFED", file: "CHAFED.mp3", style: "red-button"},
+            {name: "DISAPPOINTED", file: "disappointed.mp3", style: "orange-button"},
+            {name: "GLASSES", file: "GLASSES.mp3", style: "teal-button"},
+            {name: "RHETORICAL", file: "RHETORICAL.mp3", style: "pink-button"},
+            {name: "SAD", file: "SAD.mp3", style: "blue-button"},
+            {name: "STEAL", file: "STEAL.mp3", style: "purple-button"},
+            {name: "WANNA STEAL", file: "WANNA STEAL.mp3", style: "red-button"},
+            {name: "SIGMA", file: "sigma.mp3", style: "red-button"},
+            {name: "DUN DUN DUN", file: "dundundun.mp3", style: "blue-button"},
+            {name: "I LIKE MONEY", file: "money.mp3", style: "purple-button"},
+            {name: "ARE YOU LISTENING", file: "LISTENING.mp3", style: "red-button"},
+            {name: "CRAZY TALK", file: "CRAZY TALK.mp3", style: "pink-button"},
+            {name: "VILLAGER", file: "villager.mp3", style: "teal-button"},
+
+
         ];
 
-        // Debug logger
-        function logDebug(message) {
-            const debugInfo = document.getElementById('debug-info');
-            const timestamp = new Date().toLocaleTimeString();
-            debugInfo.innerHTML += `<p>[${timestamp}] ${message}</p>`;
-            console.log(message);
-        }
-
-        // Toggle debug panel
-        document.getElementById('debug-toggle').addEventListener('click', function() {
-            const debugPanel = document.getElementById('debug-panel');
-            if (debugPanel.classList.contains('hidden')) {
-                debugPanel.classList.remove('hidden');
-                this.textContent = 'Hide Debug Info';
-            } else {
-                debugPanel.classList.add('hidden');
-                this.textContent = 'Show Debug Info';
-            }
-        });
-
-        // Function to get base URL for GitHub Pages
+        // Function to get base URL
         function getBaseUrl() {
             return window.location.href.split('/').slice(0, -1).join('/');
         }
@@ -179,10 +162,6 @@
         // Function to initialize the soundboard
         function initSoundboard() {
             const soundboardDiv = document.getElementById('soundboard');
-            const baseUrl = getBaseUrl();
-            
-            logDebug(`Base URL: ${baseUrl}`);
-            logDebug(`Found ${sounds.length} sound configurations`);
             
             sounds.forEach((sound, index) => {
                 // Create button
@@ -194,36 +173,6 @@
                     playSound(index);
                 };
                 soundboardDiv.appendChild(button);
-                logDebug(`Added button: ${sound.name}`);
-            });
-
-            // Pre-check if files exist
-            preloadCheck();
-        }
-
-        // Function to preload check if files exist
-        function preloadCheck() {
-            const statusMessage = document.getElementById('status-message');
-            const baseUrl = getBaseUrl();
-            
-            sounds.forEach((sound, index) => {
-                // Look for audio files in the same directory as index.html
-                const audioUrl = `${baseUrl}/${sound.file}`;
-                logDebug(`Checking file: ${audioUrl}`);
-                
-                // Use fetch to check if files exist
-                fetch(audioUrl, { method: 'HEAD' })
-                    .then(response => {
-                        if (response.ok) {
-                            logDebug(`File exists: ${sound.file}`);
-                        } else {
-                            logDebug(`File not found: ${sound.file}`);
-                            statusMessage.textContent = `Warning: Some sound files may be missing. Check the debug panel for details.`;
-                        }
-                    })
-                    .catch(error => {
-                        logDebug(`Error checking file ${sound.file}: ${error.message}`);
-                    });
             });
         }
 
@@ -236,8 +185,6 @@
             // Look for audio files in the same directory as index.html
             const audioUrl = `${baseUrl}/${soundInfo.file}`;
             
-            logDebug(`Attempting to play: ${audioUrl}`);
-            
             const audio = new Audio(audioUrl);
             
             // Stop all currently playing sounds
@@ -245,13 +192,10 @@
             
             // Play the selected sound with error handling
             audio.addEventListener('error', (e) => {
-                const errorMessage = `Error playing sound: ${soundInfo.file} (${e.target.error ? e.target.error.message : 'unknown error'})`;
-                logDebug(errorMessage);
-                statusMessage.textContent = `Could not play sound: ${soundInfo.file}. See debug panel for details.`;
+                statusMessage.textContent = `Could not play sound: ${soundInfo.file}`;
             });
             
             audio.addEventListener('playing', () => {
-                logDebug(`Successfully playing: ${soundInfo.file}`);
                 statusMessage.textContent = "";
             });
             
@@ -269,14 +213,12 @@
                         window.currentAudio = audio;
                     })
                     .catch(error => {
-                        logDebug(`Playback error: ${error.name} - ${error.message}`);
-                        
                         if (error.name === 'NotSupportedError') {
-                            statusMessage.textContent = `Browser couldn't play ${soundInfo.file}. Check file format and debug panel.`;
+                            statusMessage.textContent = `Browser couldn't play ${soundInfo.file}. Check file format.`;
                         } else if (error.name === 'NotAllowedError') {
                             statusMessage.textContent = "Browser blocked audio playback. User interaction required before audio can play.";
                         } else {
-                            statusMessage.textContent = `Error playing sound. Check debug panel for details.`;
+                            statusMessage.textContent = `Error playing sound: ${error.message}`;
                         }
                     });
             }
@@ -292,14 +234,11 @@
             if (window.currentAudio) {
                 window.currentAudio.pause();
                 window.currentAudio.currentTime = 0;
-                logDebug("Stopped currently playing audio");
             }
         }
 
         // Initialize the soundboard when the page loads
         window.onload = function() {
-            logDebug("Soundboard initializing...");
-            logDebug(`Page URL: ${window.location.href}`);
             initSoundboard();
         };
     </script>
