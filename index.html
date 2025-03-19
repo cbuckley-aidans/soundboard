@@ -94,10 +94,35 @@
             background-color: #cc7a00;
         }
 
+        .debug-panel {
+            margin-top: 20px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+
         .status-message {
             color: #f44336;
             margin-top: 20px;
             font-style: italic;
+        }
+
+        .debug-toggle {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -109,6 +134,12 @@
     </div>
 
     <p id="status-message" class="status-message"></p>
+    
+    <button id="debug-toggle" class="debug-toggle">Show Debug Info</button>
+    <div id="debug-panel" class="debug-panel hidden">
+        <p>Debug Information:</p>
+        <div id="debug-info"></div>
+    </div>
 
     <script>
         // Array of sounds - ADD NEW SOUNDS HERE
@@ -120,9 +151,38 @@
             // Example: {name: "BUTTON NAME", file: "soundfile.mp3", style: "red-button"}
         ];
 
+        // Debug logger
+        function logDebug(message) {
+            const debugInfo = document.getElementById('debug-info');
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.innerHTML += `<p>[${timestamp}] ${message}</p>`;
+            console.log(message);
+        }
+
+        // Toggle debug panel
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            const debugPanel = document.getElementById('debug-panel');
+            if (debugPanel.classList.contains('hidden')) {
+                debugPanel.classList.remove('hidden');
+                this.textContent = 'Hide Debug Info';
+            } else {
+                debugPanel.classList.add('hidden');
+                this.textContent = 'Show Debug Info';
+            }
+        });
+
+        // Function to get base URL for GitHub Pages
+        function getBaseUrl() {
+            return window.location.href.split('/').slice(0, -1).join('/');
+        }
+
         // Function to initialize the soundboard
         function initSoundboard() {
             const soundboardDiv = document.getElementById('soundboard');
+            const baseUrl = getBaseUrl();
+            
+            logDebug(`Base URL: ${baseUrl}`);
+            logDebug(`Found ${sounds.length} sound configurations`);
             
             sounds.forEach((sound, index) => {
                 // Create button
@@ -134,23 +194,35 @@
                     playSound(index);
                 };
                 soundboardDiv.appendChild(button);
+                logDebug(`Added button: ${sound.name}`);
             });
 
-            // Display a notice about the sounds folder
-            checkFilesExist();
+            // Pre-check if files exist
+            preloadCheck();
         }
 
-        // Function to check if sound files exist and display appropriate message
-        function checkFilesExist() {
+        // Function to preload check if files exist
+        function preloadCheck() {
             const statusMessage = document.getElementById('status-message');
-            statusMessage.textContent = "Note: Make sure you have a 'sounds' folder with the required audio files in the same directory as this HTML file.";
+            const baseUrl = getBaseUrl();
             
-            // The message will disappear once a sound plays successfully
             sounds.forEach((sound, index) => {
-                const audio = new Audio(`sounds/${sound.file}`);
-                audio.addEventListener('canplaythrough', () => {
-                    statusMessage.textContent = "";
-                }, { once: true });
+                const audioUrl = `${baseUrl}/sounds/${sound.file}`;
+                logDebug(`Checking file: ${audioUrl}`);
+                
+                // Use fetch to check if files exist
+                fetch(audioUrl, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            logDebug(`File exists: ${sound.file}`);
+                        } else {
+                            logDebug(`File not found: ${sound.file}`);
+                            statusMessage.textContent = `Warning: Some sound files may be missing. Check the debug panel for details.`;
+                        }
+                    })
+                    .catch(error => {
+                        logDebug(`Error checking file ${sound.file}: ${error.message}`);
+                    });
             });
         }
 
@@ -158,15 +230,26 @@
         function playSound(index) {
             const statusMessage = document.getElementById('status-message');
             const soundInfo = sounds[index];
-            const audio = new Audio(`sounds/${soundInfo.file}`);
+            const baseUrl = getBaseUrl();
+            const audioUrl = `${baseUrl}/sounds/${soundInfo.file}`;
             
-            // Stop all currently playing sounds
+            logDebug(`Attempting to play: ${audioUrl}`);
+            
+            const audio = new Audio(audioUrl);
+            
+            // Stop all currently playing sounds - implemented through global audio element tracking
             stopAllSounds();
             
             // Play the selected sound with error handling
             audio.addEventListener('error', (e) => {
-                console.error(`Error playing sound: ${soundInfo.file}`, e);
-                statusMessage.textContent = `Could not play sound: ${soundInfo.file}. Make sure the file exists in the 'sounds' folder.`;
+                const errorMessage = `Error playing sound: ${soundInfo.file} (${e.target.error ? e.target.error.message : 'unknown error'})`;
+                logDebug(errorMessage);
+                statusMessage.textContent = `Could not play sound: ${soundInfo.file}. See debug panel for details.`;
+            });
+            
+            audio.addEventListener('playing', () => {
+                logDebug(`Successfully playing: ${soundInfo.file}`);
+                statusMessage.textContent = "";
             });
             
             // Visual feedback on button
@@ -179,17 +262,18 @@
             if (playPromise !== undefined) {
                 playPromise
                     .then(() => {
-                        // Sound played successfully
-                        statusMessage.textContent = "";
+                        // Track this audio element for stopping later
+                        window.currentAudio = audio;
                     })
                     .catch(error => {
-                        console.error('Error playing sound:', error);
+                        logDebug(`Playback error: ${error.name} - ${error.message}`);
+                        
                         if (error.name === 'NotSupportedError') {
-                            statusMessage.textContent = `Browser couldn't play ${soundInfo.file}. Make sure the file exists and is in a supported format (MP3, WAV, OGG).`;
+                            statusMessage.textContent = `Browser couldn't play ${soundInfo.file}. Check file format and debug panel.`;
                         } else if (error.name === 'NotAllowedError') {
-                            statusMessage.textContent = "Browser blocked audio playback. User interaction is required before audio can play.";
+                            statusMessage.textContent = "Browser blocked audio playback. User interaction required before audio can play.";
                         } else {
-                            statusMessage.textContent = `Error playing sound: ${error.message}`;
+                            statusMessage.textContent = `Error playing sound. Check debug panel for details.`;
                         }
                     });
             }
@@ -202,12 +286,19 @@
 
         // Function to stop all sounds
         function stopAllSounds() {
-            // Since we're creating new Audio objects for each play,
-            // we don't need to track and stop them
+            if (window.currentAudio) {
+                window.currentAudio.pause();
+                window.currentAudio.currentTime = 0;
+                logDebug("Stopped currently playing audio");
+            }
         }
 
         // Initialize the soundboard when the page loads
-        window.onload = initSoundboard;
+        window.onload = function() {
+            logDebug("Soundboard initializing...");
+            logDebug(`Page URL: ${window.location.href}`);
+            initSoundboard();
+        };
     </script>
 </body>
 </html>
